@@ -7,25 +7,21 @@ import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import br.com.agenda.R;
-import br.com.agenda.dao.AlunoDAO;
 import br.com.agenda.model.Aluno;
+import br.com.agenda.ui.ListaAlunosView;
 
 public class ListaAlunosActivity extends AppCompatActivity {
 
-    private final AlunoDAO dao = new AlunoDAO();
     public static final String TITULO_APPBAR = "Lista de alunos";
-    private ArrayAdapter<Aluno> adapter;
+    private final ListaAlunosView listaAlunosView = new ListaAlunosView(this);
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -34,9 +30,6 @@ public class ListaAlunosActivity extends AppCompatActivity {
         setTitle(TITULO_APPBAR);
         configuraFabNovoAluno();
         configuraLista();
-        dao.salva(new Aluno("Eduardo", "1234567890", "eduardo@gmail.com"));
-        dao.salva(new Aluno("Renaria", "1234567890", "renaria@gmail.com"));
-        dao.salva(new Aluno("Gilberto", "1234567890", "gilberto@gmail.com"));
     }
 
     @Override
@@ -46,22 +39,17 @@ public class ListaAlunosActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onContextItemSelected(@NonNull MenuItem item) {
+    public boolean onContextItemSelected( MenuItem item) {
         int itemId = item.getItemId();
         if(itemId == R.id.activity_lista_alunos_menu_remover){
-            AdapterView.AdapterContextMenuInfo menuInfo =
-                    (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-            Aluno alunoEscolhido = adapter.getItem(menuInfo.position);
-            remove(alunoEscolhido);
+            listaAlunosView.confirmaRemocao(item);
         }
         return super.onContextItemSelected(item);
     }
 
     private void configuraFabNovoAluno() {
         FloatingActionButton botaoNovoAluno = findViewById(R.id.activity_lista_alunos_fab_novo_aluno);
-        botaoNovoAluno.setOnClickListener((view) -> {
-                abreFormularioModoInsereAluno();
-        });
+        botaoNovoAluno.setOnClickListener((view) -> abreFormularioModoInsereAluno());
     }
 
     private void abreFormularioModoInsereAluno() {
@@ -71,33 +59,21 @@ public class ListaAlunosActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        atualizaAlunos();
-    }
-
-    private void atualizaAlunos() {
-        adapter.clear();
-        adapter.addAll(dao.todos());
+        listaAlunosView.atualizaAlunos();
     }
 
     private void configuraLista() {
         ListView listaDeAlunos = findViewById(R.id.activity_lista_alunos_listview);
-        configuraAdapter(listaDeAlunos);
+        listaAlunosView.configuraAdapter(listaDeAlunos);
         configuraListenerDeCliquePorItem(listaDeAlunos);
         registerForContextMenu(listaDeAlunos);
     }
 
-    private void remove(Aluno aluno) {
-        dao.remove(aluno);
-        adapter.remove(aluno);
-    }
 
     private void configuraListenerDeCliquePorItem(ListView listaDeAlunos) {
-        listaDeAlunos.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int posicao, long id) {
-                Aluno alunoEscolhido = (Aluno) adapterView.getItemAtPosition(posicao);
-                abreFormularioModoEditaAluno(alunoEscolhido);
-            }
+        listaDeAlunos.setOnItemClickListener((adapterView, view, posicao, id) -> {
+            Aluno alunoEscolhido = (Aluno) adapterView.getItemAtPosition(posicao);
+            abreFormularioModoEditaAluno(alunoEscolhido);
         });
     }
 
@@ -107,10 +83,4 @@ public class ListaAlunosActivity extends AppCompatActivity {
         startActivity(vaiParaFormularioActivity);
     }
 
-    private void configuraAdapter(ListView listaDeAlunos) {
-        adapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_list_item_1);
-        listaDeAlunos.setAdapter(adapter);
-    }
 }
